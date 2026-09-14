@@ -1,0 +1,21 @@
+{
+  "name": "cngn-skills",
+  "owner": {
+    "name": "Ezumah Jeremiah Kalu"
+  },
+  "description": "Skills for building on the cNGN stablecoin platform.",
+  "version": "1.0.0",
+  "plugins": [
+    {
+      "name": "cngn-api",
+      "source": "./",
+      "displayName": "cNGN API",
+      "description": "Integration knowledge for the cNGN stablecoin API: authentication, payload encryption, endpoints, webhooks, networks, and error handling.",
+      "version": "1.0.0",
+      "license": "MIT",
+      "homepage": "https://cngn.co",
+      "category": "integrations",
+      "keywords": ["cngn", "stablecoin", "payments", "naira", "api-integration"]
+    }
+  ]
+}

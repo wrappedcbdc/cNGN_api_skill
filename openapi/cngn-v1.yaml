@@ -1,0 +1,628 @@
+openapi: 3.1.0
+
+info:
+  title: cNGN third-party API
+  version: "1.0.0"
+  summary: Naira-backed stablecoin API for merchant integrations.
+  description: |
+    Every endpoint acts on the business authenticated by the bearer token; there is no
+    per-request account ID.
+
+    **This API encrypts both directions.** The schemas below describe the *wire* format:
+
+    - Request bodies on POST/PUT are `EncryptedRequest` (`{content, iv}`), an AES-256-CBC
+      ciphertext of the plaintext JSON.
+    - The `data` field of a success response is a base64 string, sealed with libsodium
+      `crypto_box` to the merchant's Ed25519 public key.
+
+    The plaintext shapes on either side are given as named schemas and referenced from
+    each operation with the `x-cngn-plaintext-request` and `x-cngn-plaintext-response`
+    extensions, so code generators and agents can produce correct types for the payloads
+    they encrypt and decrypt. See `skills/cngn-api/reference/encryption.md`.
+  license:
+    name: MIT
+
+servers:
+  - url: https://api.cngn.co/v1/api
+    description: Production and sandbox. The API key prefix selects the environment
+      (`cngn_test` or `cngn_live`).
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Wallet
+  - name: Networks
+  - name: Deposits
+  - name: Redemptions
+  - name: On-chain transfers
+  - name: Address whitelisting
+
+paths:
+  /balance:
+    get:
+      operationId: getBalance
+      summary: Get cNGN balances
+      tags: [Wallet]
+      x-cngn-plaintext-response: BalanceList
+      responses:
+        "200":
+          $ref: "#/components/responses/EncryptedSuccess"
+        default:
+          $ref: "#/components/responses/Error"
+
+  /transactions:
+    get:
+      operationId: getTransactions
+      summary: Get paginated transaction history
+      tags: [Wallet]
+      x-cngn-plaintext-response: PaginatedTransactions
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 1, minimum: 1 }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 10, minimum: 1 }
+      responses:
+        "200":
+          $ref: "#/components/responses/EncryptedSuccess"
+        default:
+          $ref: "#/components/responses/Error"
+
+  /networks:
+    get:
+      operationId: getNetworks
+      summary: List supported blockchain networks
+      description: The `id` of each entry is the `networkId` other endpoints expect. IDs
+        are environment-specific; never hard-code them.
+      tags: [Networks]
+      x-cngn-plaintext-response: NetworkList
+      parameters:
+        - name: includeBlockchain
+          in: query
+          schema: { type: boolean, default: false }
+      responses:
+        "200":
+          $ref: "#/components/responses/EncryptedSuccess"
+        default:
+          $ref: "#/components/responses/Error"
+
+  /virtual-account:
+    get:
+      operationId: getVirtualAccount
+      summary: Get dedicated virtual account(s)
+      description: Requires the Fiat Deposit permission.
+      tags: [Deposits]
+      x-cngn-permission: Fiat Deposit
+      x-cngn-plaintext-response: VirtualAccountList
+      responses:
+        "200":
+          $ref: "#/components/responses/EncryptedSuccess"
+        default:
+          $ref: "#/components/responses/Error"
+
+  /virtual-account/temporary:
+    post:
+      operationId: createTemporaryVirtualAccount
+      summary: Create a one-time virtual account
+      description: Requires the Fiat Deposit permission.
+      tags: [Deposits]
+      x-cngn-permission: Fiat Deposit
+      x-cngn-plaintext-request: CreateTemporaryVirtualAccountRequest
+      x-cngn-plaintext-response: TemporaryVirtualAccount
+      requestBody:
+        $ref: "#/components/requestBodies/Encrypted"
+      responses:
+        "200":
+          $ref: "#/components/responses/EncryptedSuccess"
+        default:
+          $ref: "#/components/responses/Error"
+
+  /redeemAsset:
+    post:
+      operationId: redeemAsset
+      summary: Redeem cNGN to a bank account
+      description: Requires the Redeem permission. Burns cNGN and pays out Naira.
+      tags: [Redemptions]
+      x-cngn-permission: Redeem
+      x-cngn-plaintext-request: RedeemAssetRequest
+      x-cngn-plaintext-response: TransactionRefResult
+      requestBody:
+        $ref: "#/components/requestBodies/Encrypted"
+      responses:
+        "200":
+          $ref: "#/components/responses/EncryptedSuccess"
+        default:
+          $ref: "#/components/responses/Error"
+
+  /account/verify:
+    post:
+      operationId: verifyAccountDetails
+      summary: Resolve a bank account number to its registered name
+      tags: [Redemptions]
+      x-cngn-plaintext-request: VerifyAccountRequest
+      x-cngn-plaintext-response: VerifiedAccount
+      requestBody:
+        $ref: "#/components/requestBodies/Encrypted"
+      responses:
+        "200":
+          $ref: "#/components/responses/EncryptedSuccess"
+        default:
+          $ref: "#/components/responses/Error"
+
+  /banks:
+    get:
+      operationId: getBanks
+      summary: List supported banks with CBN codes
+      tags: [Redemptions]
+      x-cngn-plaintext-response: BankList
+      responses:
+        "200":
+          $ref: "#/components/responses/EncryptedSuccess"
+        default:
+          $ref: "#/components/responses/Error"
+
+  /bank-account:
+    put:
+      operationId: updateBankAccount
+      summary: Update the settlement bank account
+      tags: [Redemptions]
+      x-cngn-plaintext-request: UpdateBankAccountRequest
+      x-cngn-plaintext-response: UpdateBankAccountRequest
+      requestBody:
+        $ref: "#/components/requestBodies/Encrypted"
+      responses:
+        "200":
+          $ref: "#/components/responses/EncryptedSuccess"
+        default:
+          $ref: "#/components/responses/Error"
+
+  /withdraw:
+    post:
+      operationId: withdraw
+      summary: Withdraw cNGN to an external wallet
+      description: Requires the Send Crypto permission.
+      tags: [On-chain transfers]
+      x-cngn-permission: Send Crypto
+      x-cngn-plaintext-request: WithdrawRequest
+      x-cngn-plaintext-response: TransactionRefResult
+      requestBody:
+        $ref: "#/components/requestBodies/Encrypted"
+      responses:
+        "200":
+          $ref: "#/components/responses/EncryptedSuccess"
+        default:
+          $ref: "#/components/responses/Error"
+
+  /withdraw/verify/{tnxRef}:
+    get:
+      operationId: verifyWithdrawal
+      summary: Check a withdrawal's status
+      tags: [On-chain transfers]
+      x-cngn-plaintext-response: Transaction
+      parameters:
+        - name: tnxRef
+          in: path
+          required: true
+          description: The `trxRef` returned by the withdraw operation.
+          schema: { type: string }
+      responses:
+        "200":
+          $ref: "#/components/responses/EncryptedSuccess"
+        default:
+          $ref: "#/components/responses/Error"
+
+  /bridge-quote:
+    post:
+      operationId: bridgeQuote
+      summary: Get fees and receivable amount for a bridge
+      description: Requires the Swap permission.
+      tags: [On-chain transfers]
+      x-cngn-permission: Swap
+      x-cngn-plaintext-request: BridgeQuoteRequest
+      x-cngn-plaintext-response: BridgeQuote
+      requestBody:
+        $ref: "#/components/requestBodies/Encrypted"
+      responses:
+        "200":
+          $ref: "#/components/responses/EncryptedSuccess"
+        default:
+          $ref: "#/components/responses/Error"
+
+  /bridge:
+    post:
+      operationId: bridge
+      summary: Move cNGN between blockchain networks
+      description: Requires the Swap permission. The bridge starts once cNGN is sent to
+        the returned `receivableAddress` on the origin network.
+      tags: [On-chain transfers]
+      x-cngn-permission: Swap
+      x-cngn-plaintext-request: BridgeRequest
+      x-cngn-plaintext-response: BridgeResult
+      requestBody:
+        $ref: "#/components/requestBodies/Encrypted"
+      responses:
+        "200":
+          $ref: "#/components/responses/EncryptedSuccess"
+        default:
+          $ref: "#/components/responses/Error"
+
+  /whitelist:
+    post:
+      operationId: whitelistAddress
+      summary: Whitelist an external wallet address
+      tags: [Address whitelisting]
+      x-cngn-plaintext-request: WhitelistAddressRequest
+      x-cngn-plaintext-response: WhitelistedAddressList
+      requestBody:
+        $ref: "#/components/requestBodies/Encrypted"
+      responses:
+        "200":
+          $ref: "#/components/responses/EncryptedSuccess"
+        default:
+          $ref: "#/components/responses/Error"
+
+  /whitelisted:
+    get:
+      operationId: getWhitelistedAddresses
+      summary: List whitelisted addresses
+      tags: [Address whitelisting]
+      x-cngn-plaintext-response: WhitelistedAddressList
+      parameters:
+        - name: includeNetwork
+          in: query
+          schema: { type: boolean, default: false }
+      responses:
+        "200":
+          $ref: "#/components/responses/EncryptedSuccess"
+        default:
+          $ref: "#/components/responses/Error"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: |
+        `Authorization: Bearer cngn_test…` or `Bearer cngn_live…`. The prefix selects the
+        environment. The source IP must also be whitelisted in the merchant dashboard.
+
+  requestBodies:
+    Encrypted:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/EncryptedRequest"
+
+  responses:
+    EncryptedSuccess:
+      description: Success. `data` is encrypted to the merchant's Ed25519 public key.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/SuccessEnvelope"
+    Error:
+      description: |
+        Failure. Most errors use `{status: <http code>, message}`; permission failures use
+        `{status: false, message: "Permission denied"}`. Rate limiting returns 429 after
+        20 requests per 60 seconds per API key.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+
+  schemas:
+    EncryptedRequest:
+      type: object
+      description: AES-256-CBC ciphertext of the plaintext JSON body. The AES key is the
+        SHA-256 hash of the dashboard encryption key.
+      required: [content, iv]
+      properties:
+        content:
+          type: string
+          description: Base64-encoded ciphertext.
+        iv:
+          type: string
+          description: Base64-encoded 16-byte initialization vector, fresh per request.
+
+    SuccessEnvelope:
+      type: object
+      required: [status, message, data]
+      properties:
+        status:
+          type: integer
+          const: 200
+        message:
+          type: string
+        data:
+          type: string
+          description: Base64 blob laid out as 24-byte nonce, ciphertext, 32-byte
+            ephemeral public key. Decrypt with the merchant's Ed25519 private key.
+
+    ErrorEnvelope:
+      type: object
+      required: [status, message]
+      properties:
+        status:
+          oneOf:
+            - type: integer
+            - type: boolean
+              const: false
+          description: HTTP status code, or `false` for permission failures.
+        message:
+          type: string
+
+    Pagination:
+      type: object
+      required: [count, pages, isLastPage]
+      properties:
+        count: { type: integer }
+        pages: { type: integer }
+        isLastPage: { type: boolean }
+        nextPage: { type: [integer, "null"] }
+        previousPage: { type: [integer, "null"] }
+
+    Balance:
+      type: object
+      properties:
+        asset_type: { type: string, examples: ["credit_alphanum4"] }
+        asset_code: { type: string, examples: ["CNGN"] }
+        balance:
+          type: string
+          description: Decimal string. Parse with a decimal type, never a float.
+
+    BalanceList:
+      type: array
+      items:
+        $ref: "#/components/schemas/Balance"
+
+    Transaction:
+      type: object
+      properties:
+        id: { type: string }
+        from: { type: string }
+        receiver:
+          type: object
+          description: '`{address}` for on-chain transfers, `{bank, accountNumber}` for
+            fiat settlement.'
+          additionalProperties: true
+        amount: { type: string }
+        description: { type: string }
+        createdAt: { type: string, format: date-time }
+        trx_ref: { type: string }
+        trx_type:
+          type: string
+          enum: [deposit, withdrawal, redeem, swap]
+        network: { type: string }
+        asset_type: { type: string }
+        asset_symbol: { type: string }
+        base_trx_hash: { type: [string, "null"] }
+        extl_trx_hash: { type: [string, "null"] }
+        explorer_link: { type: [string, "null"] }
+        status:
+          type: string
+          enum: [pending, success, failed]
+
+    PaginatedTransactions:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Transaction"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+
+    Network:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Pass as `networkId` elsewhere. Environment-specific.
+        name: { type: string }
+        short_name: { type: string, examples: ["BASE", "BSC"] }
+        isDisabled:
+          type: boolean
+          description: Disabled networks cannot be used for transfers.
+        blockchain:
+          type: [object, "null"]
+          additionalProperties: true
+
+    NetworkList:
+      type: array
+      items:
+        $ref: "#/components/schemas/Network"
+
+    VirtualAccount:
+      type: object
+      properties:
+        accountNumber: { type: string, description: 10-digit NUBAN }
+        accountName: { type: string }
+        bankName: { type: string }
+        bankCode: { type: string, description: CBN bank code }
+
+    VirtualAccountList:
+      type: array
+      items:
+        $ref: "#/components/schemas/VirtualAccount"
+
+    CreateTemporaryVirtualAccountRequest:
+      type: object
+      required: [amount, customer]
+      properties:
+        amount:
+          type: number
+          minimum: 100
+          description: Expected deposit in Naira.
+        customer:
+          type: object
+          required: [email]
+          properties:
+            email: { type: string, format: email }
+            name: { type: string }
+        accountName:
+          type: string
+          minLength: 3
+          maxLength: 50
+        narration:
+          type: string
+          maxLength: 100
+
+    TemporaryVirtualAccount:
+      type: object
+      properties:
+        reference: { type: string }
+        paymentReference: { type: string }
+        amount: { type: number }
+        amountExpected:
+          type: number
+          description: Total including fees. Show this to the payer when fees are passed on.
+        fee: { type: number }
+        vat: { type: number }
+        currency: { type: string, const: NGN }
+        status: { type: string }
+        narration: { type: string }
+        accountNumber: { type: string }
+        accountName: { type: string }
+        bankName: { type: string }
+        bankCode: { type: string }
+        expiresAt:
+          type: string
+          format: date-time
+          description: Deposits after this time are not credited.
+
+    RedeemAssetRequest:
+      type: object
+      required: [amount, bankCode, accountNumber]
+      properties:
+        amount: { type: number, minimum: 1 }
+        bankCode: { type: string }
+        accountNumber: { type: string }
+        saveDetails: { type: boolean }
+
+    TransactionRefResult:
+      type: object
+      description: Returned by redeem and withdraw.
+      properties:
+        trxRef: { type: string }
+        address: { type: string }
+
+    VerifyAccountRequest:
+      type: object
+      required: [bankCode, accountNumber]
+      properties:
+        bankCode: { type: string }
+        accountNumber: { type: string }
+
+    VerifiedAccount:
+      type: object
+      properties:
+        accountNumber: { type: string }
+        accountName: { type: string }
+        bankCode: { type: string }
+
+    Bank:
+      type: object
+      properties:
+        name: { type: string }
+        code: { type: string, description: CBN bank code }
+
+    BankList:
+      type: array
+      items:
+        $ref: "#/components/schemas/Bank"
+
+    UpdateBankAccountRequest:
+      type: object
+      description: Note these field names differ from the bankCode/accountNumber pair used
+        by redeem and account verification.
+      required: [bankName, bankAccountName, bankAccountNumber]
+      properties:
+        bankName: { type: string }
+        bankAccountName: { type: string }
+        bankAccountNumber: { type: string }
+
+    WithdrawRequest:
+      type: object
+      required: [amount, address, networkId]
+      properties:
+        amount: { type: number }
+        address: { type: string }
+        networkId:
+          type: string
+          description: From GET /networks, for this environment.
+        shouldSaveAddress: { type: boolean, default: false }
+
+    BridgeQuoteRequest:
+      type: object
+      required: [amount, originNetworkId, destinationNetworkId, destinationAddress]
+      properties:
+        amount: { type: number }
+        originNetworkId: { type: string }
+        destinationNetworkId: { type: string }
+        destinationAddress: { type: string }
+
+    BridgeQuote:
+      type: object
+      properties:
+        amountReceivable: { type: string }
+        networkFee: { type: string }
+        bridgeFee: { type: string }
+
+    BridgeRequest:
+      type: object
+      required: [originNetworkId, destinationNetworkId, destinationAddress]
+      properties:
+        originNetworkId: { type: string }
+        destinationNetworkId: { type: string }
+        destinationAddress: { type: string }
+        senderAddress: { type: string }
+        callbackUrl:
+          type: string
+          format: uri
+          description: Unsigned one-time notification with a 4.5 second timeout. Treat it
+            as a hint and confirm via GET /transactions.
+
+    BridgeResult:
+      type: object
+      properties:
+        receivableAddress:
+          type: string
+          description: Send the cNGN you want to bridge here, on the origin network.
+        transactionId: { type: string }
+        reference: { type: string }
+
+    WhitelistAddressRequest:
+      type: object
+      required: [networkId, address]
+      properties:
+        networkId: { type: string }
+        address: { type: string }
+
+    WhitelistedAddress:
+      type: object
+      properties:
+        id: { type: string }
+        networkId: { type: string }
+        publicKey:
+          type: string
+          description: The address you whitelisted.
+        internalPublicKey:
+          type: string
+          description: The cNGN-side deposit address paired to this entry. Not the same as
+            publicKey.
+        network:
+          type: object
+          properties:
+            id: { type: string }
+            name: { type: string }
+            short_name: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    WhitelistedAddressList:
+      type: array
+      items:
+        $ref: "#/components/schemas/WhitelistedAddress"

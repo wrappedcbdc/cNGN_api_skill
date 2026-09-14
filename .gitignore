@@ -1,0 +1,12 @@
+# Never commit cNGN credentials
+cngn_api_key
+cngn_api_key.pub
+*.pem
+.env
+.env.*
+
+# Tooling
+node_modules/
+__pycache__/
+*.pyc
+.DS_Store
