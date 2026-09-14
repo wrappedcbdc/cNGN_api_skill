@@ -1,0 +1,3 @@
+# Keep LF in the working tree regardless of the checking-out machine's core.autocrlf.
+# The Python helper carries a shebang, and CRLF would break it on Unix.
+* text=auto eol=lf
