@@ -5,9 +5,11 @@
   "version": "1.0.0",
   "description": "Integration knowledge for the cNGN stablecoin API: authentication, payload encryption, endpoints, webhooks, networks, and error handling.",
   "author": {
-    "name": "Ezumah Jeremiah Kalu"
+    "name": "cNGN",
+    "url": "https://github.com/wrappedcbdc"
   },
   "homepage": "https://cngn.co",
+  "repository": "https://github.com/wrappedcbdc/cNGN_api_skill",
   "license": "MIT",
   "keywords": [
     "cngn",

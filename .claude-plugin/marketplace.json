@@ -1,7 +1,8 @@
 {
   "name": "cngn-skills",
   "owner": {
-    "name": "Ezumah Jeremiah Kalu"
+    "name": "cNGN",
+    "url": "https://github.com/wrappedcbdc"
   },
   "description": "Skills for building on the cNGN stablecoin platform.",
   "version": "1.0.0",
@@ -14,6 +15,7 @@
       "version": "1.0.0",
       "license": "MIT",
       "homepage": "https://cngn.co",
+      "repository": "https://github.com/wrappedcbdc/cNGN_api_skill",
       "category": "integrations",
       "keywords": ["cngn", "stablecoin", "payments", "naira", "api-integration"]
     }

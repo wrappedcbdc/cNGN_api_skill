@@ -33,10 +33,8 @@ AGENTS.md                Entry point for non-Claude agents
 
 ## Install for Claude Code
 
-From a checkout, or straight from the hosted repository:
-
 ```
-/plugin marketplace add <owner>/cngn-api-skill
+/plugin marketplace add wrappedcbdc/cNGN_api_skill
 /plugin install cngn-api@cngn-skills
 ```
 
@@ -56,7 +54,7 @@ so any agent can consume them.
 
 | Agent | How |
 | --- | --- |
-| OpenAI Codex, Cursor, Gemini CLI, Aider, Jules | They read `AGENTS.md` from the repository root. Vendor this repo into your project, or copy `AGENTS.md` and `skills/cngn-api/` into it. |
+| OpenAI Codex, Cursor, Gemini CLI, Aider, Jules | They read `AGENTS.md` from the repository root. Clone this repo into your project, or copy `AGENTS.md` and `skills/cngn-api/` into it: `git clone https://github.com/wrappedcbdc/cNGN_api_skill`. |
 | Claude API / claude.ai | Zip `skills/cngn-api/` and upload it as a Skill; `SKILL.md` already carries the required `name` and `description` frontmatter. |
 | GitHub Copilot | Copy the "Non-negotiables" section of `AGENTS.md` into `.github/copilot-instructions.md`. |
 | Anything with tool/function calling | Load `openapi/cngn-v1.yaml`. It describes the encrypted wire format, and names the decrypted payload schema for each operation via `x-cngn-plaintext-request` / `x-cngn-plaintext-response`. |
@@ -81,14 +79,15 @@ TypeScript equivalent needs `npm install libsodium-wrappers`.
 
 ## Source and maintenance
 
-Content is derived from the [cNGN API documentation](https://api.cngn.co) source
-(`docs_cNGN_api`), which is in turn documented from the cNGN v2 backend's third-party
-router. When endpoints change:
+Content is derived from the cNGN API documentation site (`docs_cNGN_api`), which is in
+turn documented from the cNGN v2 backend's third-party router. The site documents this
+skill on its **AI Agent Skill** page; keep the two in step. When endpoints change:
 
 1. Update the matching page under `docs_cNGN_api/api-reference/`.
 2. Update `skills/cngn-api/reference/endpoints.md` and `openapi/cngn-v1.yaml` here.
 3. Bump `version` in both `.claude-plugin/plugin.json` and
    `.claude-plugin/marketplace.json`.
+4. Add a changelog entry on the docs site if the change affects integrators.
 
 Keep `SKILL.md` under 500 lines and keep reference links one level deep from it; agents
 read linked files on demand, and deeper nesting causes partial reads.
