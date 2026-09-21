@@ -10,7 +10,7 @@ See [encryption.md](encryption.md).
 
 ## Contents
 
-- [Wallet: get balance, get transactions](#wallet)
+- [Wallet: get balance, get transactions, get transaction](#wallet)
 - [Networks: get networks](#networks)
 - [Deposits: get virtual account, create temporary virtual account](#deposits)
 - [Redemptions: redeem asset, verify account details, get banks, update bank account](#redemptions)
@@ -71,7 +71,7 @@ Decrypted `data` is `{ data: Transaction[], pagination: Pagination }`.
 | `amount` | string | Amount as a decimal string |
 | `description` | string | Human-readable description |
 | `createdAt` | string | ISO 8601 timestamp |
-| `trx_ref` | string | Transaction reference; use with `/withdraw/verify/{tnxRef}` |
+| `trx_ref` | string | Transaction reference; use with `/transactions/{tnxRef}` |
 | `trx_type` | string | `deposit`, `withdrawal`, `redeem`, `swap` |
 | `network` | string | Network the transaction executed on |
 | `asset_type` | string | Asset classification |
@@ -354,10 +354,25 @@ via `POST /whitelist`.
 }
 ```
 
+### GET /transactions/{tnxRef}
+
+Returns one transaction record, same shape as a `/transactions` item. Path parameter
+`tnxRef` is the `trx_ref` / `trxRef` from `/withdraw`, `/redeemAsset`, `/bridge`, or
+`/transactions`. Only transactions belonging to your business are returned; an unknown
+reference, or one owned by another business, returns `400 Transaction not found.`
+
+```bash
+curl -X GET "https://api.cngn.co/v1/api/transactions/WD-7f3a2b1c" \
+  -H "Authorization: Bearer YOUR_API_KEY"
+```
+
+Response `data` is a single Transaction object (see [GET /transactions](#get-transactions)).
+
 ### GET /withdraw/verify/{tnxRef}
 
 Returns the full transaction record for a withdrawal, same shape as a `/transactions`
-item. Path parameter `tnxRef` is the `trxRef` returned by `/withdraw`.
+item. Path parameter `tnxRef` is the `trxRef` returned by `/withdraw`. Scoped to your
+business, like `/transactions/{tnxRef}`.
 
 Poll with exponential backoff, not a tight loop. Unknown references return
 `400 Transaction not found`.

@@ -48,6 +48,7 @@ Bearer cngn_test…/cngn_live… ──▶ IP whitelist check ──▶ decrypt 
 | --- | --- | --- | --- |
 | GET | `/balance` | cNGN balances | none |
 | GET | `/transactions` | Paginated history | none |
+| GET | `/transactions/{tnxRef}` | Single transaction by reference | none |
 | GET | `/networks` | Supported networks; source of `networkId` | none |
 | GET | `/virtual-account` | Dedicated NUBAN deposit account(s) | Fiat Deposit |
 | POST | `/virtual-account/temporary` | One-time deposit account | Fiat Deposit |

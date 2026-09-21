@@ -70,6 +70,26 @@ paths:
         default:
           $ref: "#/components/responses/Error"
 
+  /transactions/{tnxRef}:
+    get:
+      operationId: getTransaction
+      summary: Get a single transaction by reference
+      description: Only transactions belonging to the calling business are returned;
+        otherwise the response is a 400 "Transaction not found."
+      tags: [Wallet]
+      x-cngn-plaintext-response: Transaction
+      parameters:
+        - name: tnxRef
+          in: path
+          required: true
+          description: The transaction reference (`trx_ref`).
+          schema: { type: string }
+      responses:
+        "200":
+          $ref: "#/components/responses/EncryptedSuccess"
+        default:
+          $ref: "#/components/responses/Error"
+
   /networks:
     get:
       operationId: getNetworks
