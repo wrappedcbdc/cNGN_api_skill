@@ -136,7 +136,7 @@ Read these only when the task needs them.
   decrypted response shapes, worked examples, pagination.
 - **[reference/encryption.md](reference/encryption.md)** — AES-256-CBC request encryption
   and Ed25519/Curve25519 response decryption, with reference implementations.
-- **[reference/webhooks.md](reference/webhooks.md)** — the five event types, payload
+- **[reference/webhooks.md](reference/webhooks.md)** — the six event types, payload
   fields per event, signature verification, delivery guarantees.
 - **[reference/errors.md](reference/errors.md)** — every documented error message, its
   cause, and whether it is retryable.

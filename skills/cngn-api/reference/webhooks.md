@@ -24,6 +24,7 @@ dashboard**, not through the API. Each environment has its own webhook URL.
 | `deposit.completed` | A deposit (fiat or on-chain) was fully processed and cNGN credited. |
 | `redemption.completed` | A redemption settled; Naira paid out to the bank account. |
 | `withdrawal.completed` | An on-chain withdrawal was confirmed on the network. |
+| `bridge.completed` | A bridge settled: cNGN was minted on the destination network. |
 | `transaction.failed` | Any transaction failed or was rejected; `reason` explains why when known. |
 
 `deposit.received` then `deposit.completed` is the normal fiat deposit lifecycle, sharing
@@ -50,7 +51,7 @@ Every delivery is an HTTPS `POST` with the same envelope:
 | `businessId` | string | Your business ID |
 | `initiatorId` | string | User that initiated the transaction |
 | `status` | string | `pending`, `completed`, `failed`, `rejected` |
-| `trx_type` | string | `fiat_buy`, `crypto_deposit`, `fiat_redeem`, `enaira_redeem`, `withdraw` |
+| `trx_type` | string | `fiat_buy`, `crypto_deposit`, `fiat_redeem`, `enaira_redeem`, `withdraw`, `swap` |
 | `network` | string | Network the transaction executed on, when on-chain |
 | `base_trx_hash` | string \| null | Hash on the origin/issuing network |
 | `extl_trx_hash` | string \| null | Hash on the destination/external network |
@@ -62,19 +63,19 @@ Every delivery is an HTTPS `POST` with the same envelope:
 | `occurredAt` | string | ISO 8601 timestamp of the state change |
 
 Note `trx_type` here uses different values than the `trx_type` in `GET /transactions`.
-Webhooks use `fiat_buy`/`crypto_deposit`/`fiat_redeem`/`enaira_redeem`/`withdraw`; the
+Webhooks use `fiat_buy`/`crypto_deposit`/`fiat_redeem`/`enaira_redeem`/`withdraw`/`swap`; the
 transactions endpoint uses `deposit`/`withdrawal`/`redeem`/`swap`.
 
 ## Field presence by event
 
-| Field | deposit.received | deposit.completed | redemption.completed | withdrawal.completed | transaction.failed |
-| --- | --- | --- | --- | --- | --- |
-| `transactionId`, `trx_ref`, `businessId`, `initiatorId`, `status`, `trx_type`, `amount`, `asset_symbol`, `receiver`, `occurredAt` | Yes | Yes | Yes | Yes | Yes |
-| `network` | No | Yes | Yes | Yes | Sometimes |
-| `base_trx_hash` | No | Yes | No | Yes | Sometimes |
-| `extl_trx_hash` | No | On-chain deposits | No | Yes | No |
-| `explorer_link` | No | Yes | No | Yes | Sometimes |
-| `reason` | No | No | No | No | When known |
+| Field | deposit.received | deposit.completed | redemption.completed | withdrawal.completed | bridge.completed | transaction.failed |
+| --- | --- | --- | --- | --- | --- | --- |
+| `transactionId`, `trx_ref`, `businessId`, `initiatorId`, `status`, `trx_type`, `amount`, `asset_symbol`, `receiver`, `occurredAt` | Yes | Yes | Yes | Yes | Yes | Yes |
+| `network` | No | Yes | Yes | Yes | Yes | Sometimes |
+| `base_trx_hash` | No | Yes | No | Yes | Yes | Sometimes |
+| `extl_trx_hash` | No | On-chain deposits | No | Yes | Yes | No |
+| `explorer_link` | No | Yes | No | Yes | Yes | Sometimes |
+| `reason` | No | No | No | No | No | When known |
 
 Read every optional field defensively.
 
@@ -182,6 +183,36 @@ destination network, and `receiver` the destination wallet address:
     "extl_trx_hash": "0x4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b",
     "explorer_link": "https://basescan.org/tx/0x4a5b...4a5b",
     "amount": "25000",
+    "asset_symbol": "CNGN",
+    "receiver": "0x8Ba1f109551bD432803012645Ac136ddd64DBA72",
+    "occurredAt": "2026-07-22T17:44:19.000Z"
+  },
+  "timestamp": "2026-07-22T17:44:19.402Z"
+}
+```
+
+### bridge.completed
+
+A bridge settled. `network` is the destination network, `base_trx_hash` the burn on the
+origin network, `extl_trx_hash` the mint on the destination network, `receiver` the
+destination address, and `amount` the amount bridged before fees. A failed bridge fires
+`transaction.failed` with `trx_type` `swap` instead.
+
+```json
+{
+  "event": "bridge.completed",
+  "data": {
+    "transactionId": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+    "trx_ref": "b7c8d9e0-f1a2-4b3c-8d4e-5f6a7b8c9d0e",
+    "businessId": "4f1d0c2a-7b3e-4d5f-8a9b-0c1d2e3f4a5b",
+    "initiatorId": "7e6d5c4b-3a2f-4e1d-9c8b-7a6f5e4d3c2b",
+    "status": "completed",
+    "trx_type": "swap",
+    "network": "BASE",
+    "base_trx_hash": "d0c1b2a3f4e5d6c7b8a9f0e1d2c3b4a5f6e7d8c9b0a1f2e3d4c5b6a7f8e9d0c1",
+    "extl_trx_hash": "0x4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b",
+    "explorer_link": "https://basescan.org/tx/0x4a5b...4a5b",
+    "amount": "100000",
     "asset_symbol": "CNGN",
     "receiver": "0x8Ba1f109551bD432803012645Ac136ddd64DBA72",
     "occurredAt": "2026-07-22T17:44:19.000Z"
