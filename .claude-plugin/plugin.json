@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "cngn-api",
   "displayName": "cNGN API",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Integration knowledge for the cNGN stablecoin API: authentication, payload encryption, endpoints, webhooks, networks, and error handling.",
   "author": {
     "name": "cNGN",

@@ -5,14 +5,14 @@
     "url": "https://github.com/wrappedcbdc"
   },
   "description": "Skills for building on the cNGN stablecoin platform.",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "plugins": [
     {
       "name": "cngn-api",
       "source": "./",
       "displayName": "cNGN API",
       "description": "Integration knowledge for the cNGN stablecoin API: authentication, payload encryption, endpoints, webhooks, networks, and error handling.",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "license": "MIT",
       "homepage": "https://cngn.co",
       "repository": "https://github.com/wrappedcbdc/cNGN_api_skill",
